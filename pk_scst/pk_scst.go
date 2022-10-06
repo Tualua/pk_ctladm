@@ -3,11 +3,12 @@ package pk_scst
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -35,7 +36,7 @@ func readParamsFromDir(dirpath string) (map[string]string, error) {
 				if f, err := os.Open(path.Join(dirpath, v.Name())); err != nil {
 					res[v.Name()] = err.Error()
 				} else {
-					if val, err = ioutil.ReadAll(f); err != nil {
+					if val, err = io.ReadAll(f); err != nil {
 						res[v.Name()] = err.Error()
 					}
 					res[v.Name()] = strings.TrimSuffix(string(val), "\n")
@@ -149,7 +150,7 @@ func ScstGetDeviceParam(device string, param string) string {
 	if err != nil {
 		res = ""
 	} else {
-		deviceParamData, err := ioutil.ReadAll(deviceParam)
+		deviceParamData, err := io.ReadAll(deviceParam)
 		if err != nil {
 			res = ""
 		}
@@ -167,7 +168,7 @@ func ScstGetIscsiTargetParam(wwn string, param string) (res string, err error) {
 	if deviceParam, err := os.Open(paramPath); err != nil {
 		res = ""
 	} else {
-		if deviceParamData, err := ioutil.ReadAll(deviceParam); err != nil {
+		if deviceParamData, err := io.ReadAll(deviceParam); err != nil {
 			res = ""
 		} else {
 			res = strings.Split(string(deviceParamData), "\n")[0]
@@ -337,5 +338,23 @@ func ScstListIscsiSessions(target string) (res []string, err error) {
 		}
 	}
 
+	return
+}
+
+func ScstGetLunDeviceFilename(target string, lun int) (filename string, err error) {
+	lunPath := path.Join(SCST_ISCSI_TARGETS, target, fmt.Sprintf("ini_groups/allowed_ini/luns/%d/device", lun))
+	if lunDevice, err := filepath.EvalSymlinks(lunPath); err != nil {
+		fmt.Printf("error resolving LUN %d path for %s", lun, target)
+	} else {
+		if lunFile, err := os.Open(path.Join(lunDevice, "filename")); err != nil {
+			fmt.Printf("error opening %s\n", lunDevice)
+		} else {
+			if lunFilename, err := io.ReadAll(lunFile); err != nil {
+				fmt.Printf("error opening %s\n %s\n", lunFile.Name(), err.Error())
+			} else {
+				filename = string(lunFilename)
+			}
+		}
+	}
 	return
 }
