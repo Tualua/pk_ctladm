@@ -352,7 +352,7 @@ func ScstGetLunDeviceFilename(target string, lun int) (filename string, err erro
 			if lunFilename, err := io.ReadAll(lunFile); err != nil {
 				fmt.Printf("error opening %s\n %s\n", lunFile.Name(), err.Error())
 			} else {
-				filename = string(lunFilename)
+				filename = strings.Split(string(lunFilename), "\n")[0]
 			}
 		}
 	}
