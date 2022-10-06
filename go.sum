@@ -1,2 +1,4 @@
+github.com/Tualua/pk_ctladm/pk_scst v0.0.0-20221006051709-ba0195a71d6a h1:X3PZk1lV68bMcRht+vbAd+B1nDZsAxDtFEx59I6SAAs=
+github.com/Tualua/pk_ctladm/pk_scst v0.0.0-20221006051709-ba0195a71d6a/go.mod h1:eGHs8uOKvuhOFJD1aUFT+kuGQh/IiOhf80SxmuSCro4=
 github.com/akamensky/argparse v1.4.0 h1:YGzvsTqCvbEZhL8zZu2AiA5nq805NZh75JNj4ajn1xc=
 github.com/akamensky/argparse v1.4.0/go.mod h1:S5kwC7IuDcEr5VeXtGPRVZ5o/FdhcMlQz4IZQuw64xA=
