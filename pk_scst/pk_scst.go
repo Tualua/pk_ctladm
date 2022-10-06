@@ -16,6 +16,7 @@ const SCST_DEVICES string = SCST_ROOT_PATH + "/devices"
 const SCST_ISCSI_TARGETS string = SCST_ROOT_PATH + "/targets/iscsi"
 const SYSFS_SCST_DEV_MGMT string = SCST_ROOT_PATH + "/handlers/vdisk_blockio/mgmt"
 const SYSFS_SCST_LUNS_MGMT string = "/ini_groups/allowed_ini/luns/mgmt"
+const SYSFS_SCST_LUN0_DEV string = "ini_groups/allowed_ini/luns/0/device"
 
 func readParamsFromDir(dirpath string) (map[string]string, error) {
 	var (
