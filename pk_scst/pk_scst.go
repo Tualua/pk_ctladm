@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const SCST_ROOT_PATH string = "/sys/kernel/scst_tgt"
@@ -18,6 +19,11 @@ const SCST_ISCSI_TARGETS string = SCST_ROOT_PATH + "/targets/iscsi"
 const SYSFS_SCST_DEV_MGMT string = SCST_ROOT_PATH + "/handlers/vdisk_blockio/mgmt"
 const SYSFS_SCST_LUNS_MGMT string = "/ini_groups/allowed_ini/luns/mgmt"
 const SYSFS_SCST_LUN0_DEV string = "ini_groups/allowed_ini/luns/0/device"
+
+type ScstBlockDevice struct {
+	Name     string
+	Filename string
+}
 
 func readParamsFromDir(dirpath string) (map[string]string, error) {
 	var (
@@ -50,7 +56,7 @@ func readParamsFromDir(dirpath string) (map[string]string, error) {
 	return res, err
 }
 
-func readFromDir(dirpath string) ([]string, error) {
+func ReadFromDir(dirpath string) ([]string, error) {
 	var (
 		res []string
 		err error
@@ -98,10 +104,10 @@ func ScstGetDevices() ([]string, error) {
 		err         error
 	)
 	if scstDevicesDir, err := os.Open(SCST_DEVICES); err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 	} else {
 		if scstDevices, err = scstDevicesDir.ReadDir(0); err != nil {
-			log.Println(err.Error())
+			log.Error(err.Error())
 		} else {
 			for _, v := range scstDevices {
 				res = append(res, v.Name())
@@ -113,7 +119,7 @@ func ScstGetDevices() ([]string, error) {
 
 func ScstGetIscsiTargets() (res []string, err error) {
 	if res, err = listSubDirs(SCST_ISCSI_TARGETS); err != nil {
-		log.Println(err.Error())
+		err = fmt.Errorf("ScstGetIscsiTargets: cannot get iSCSI targets: %w", err)
 	}
 	return res, err
 }
@@ -198,7 +204,7 @@ func scstSetDeviceParam(device string, param string, val string) (err error) {
 func ScstGetDeviceParams(device string) (res map[string]string, err error) {
 
 	if res, err = readParamsFromDir(path.Join(SCST_DEVICES, device)); err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 	}
 	return
 }
@@ -242,13 +248,13 @@ func ScstDeactivateDevice(device string) (err error) {
 	scstCmd := []byte("0")
 	scstCmdPath := path.Join(SCST_DEVICES, device, "active")
 	if mgmt, err = os.OpenFile(scstCmdPath, os.O_WRONLY, 0644); err != nil {
-		log.Println(err.Error())
+		//log.Println(err.Error())
+		err = fmt.Errorf("ScstDeactivateDevice: cannot deactivate device: %w", err)
 	} else {
 		defer mgmt.Close()
 		if _, err = mgmt.Write(scstCmd); err != nil {
-			log.Println(err.Error())
-		} else {
-			log.Printf("Device %s deactivated \n", device)
+			//log.Println(err.Error())
+			err = fmt.Errorf("ScstDeactivateDevice: cannot deactivate device: %w", err)
 		}
 	}
 	return
@@ -333,7 +339,7 @@ func ScstListIscsiSessions(target string) (res []string, err error) {
 		log.Println(err.Error())
 	} else {
 		sessionsPath = path.Join(SCST_ISCSI_TARGETS, wwn, "sessions")
-		if res, err = readFromDir(sessionsPath); err != nil {
+		if res, err = ReadFromDir(sessionsPath); err != nil {
 			log.Println(err.Error())
 		}
 	}
@@ -341,7 +347,7 @@ func ScstListIscsiSessions(target string) (res []string, err error) {
 	return
 }
 
-func ScstGetLunDeviceFilename(target string, lun int) (filename string, err error) {
+func ScstGetLunDevice(target string, lun int) (device ScstBlockDevice, err error) {
 	lunPath := path.Join(SCST_ISCSI_TARGETS, target, fmt.Sprintf("ini_groups/allowed_ini/luns/%d/device", lun))
 	if lunDevice, err := filepath.EvalSymlinks(lunPath); err != nil {
 		fmt.Printf("error resolving LUN %d path for %s", lun, target)
@@ -352,9 +358,24 @@ func ScstGetLunDeviceFilename(target string, lun int) (filename string, err erro
 			if lunFilename, err := io.ReadAll(lunFile); err != nil {
 				fmt.Printf("error opening %s\n %s\n", lunFile.Name(), err.Error())
 			} else {
-				filename = strings.Split(string(lunFilename), "\n")[0]
+				//filename = strings.Split(string(lunFilename), "\n")[0]
+				device.Name = filepath.Base(lunDevice)
+				if len(string(lunFilename)) > 0 {
+					device.Filename = strings.Split(string(lunFilename), "\n")[0]
+				}
 			}
 		}
+	}
+	return
+}
+
+func ScstGetIscsiTargetSessions(target string) (sessions []string) {
+	var (
+		err error
+	)
+	sessionsPath := path.Join(SCST_ISCSI_TARGETS, target, "sessions")
+	if sessions, err = listSubDirs(sessionsPath); err != nil {
+		log.Errorf("error reading sessions for target %s", target)
 	}
 	return
 }
