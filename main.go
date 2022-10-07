@@ -47,7 +47,7 @@ func GetDevList(xFlag bool) {
 							params["usn"],
 							filepath.Base(params["filename"]),
 							params["filename"],
-							FindDeviceWwn(filepath.Base(params["filename"])),
+							FindDeviceWwn(dev),
 							params["threads_num"],
 						}
 						DevList = append(DevList, device)
@@ -175,9 +175,19 @@ func CreateLun(dev string) {
 }
 
 func init() {
+	var (
+		logFilePath string
+	)
 	log.SetFormatter(&logrus.TextFormatter{})
 	log.SetLevel(logrus.DebugLevel)
-	if logFile, err := os.OpenFile("ctladm.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err != nil {
+	if os.Getenv("CTLADM_DEBUG") == "true" {
+		logFilePath = "ctladm.log"
+		fmt.Println("WARNING! Running in development environment")
+	} else {
+		logFilePath = "/var/log/ctladm.log"
+	}
+
+	if logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666); err != nil {
 		err = fmt.Errorf("failed to log to file, using stderr: %w", err)
 		log.Infof("init: %w", err)
 		fmt.Println(err)
