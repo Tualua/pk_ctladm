@@ -201,7 +201,7 @@ func main() {
 	var (
 		err error
 	)
-	parser := argparse.NewParser("ctladm", "Prints provided string to stdout")
+	parser := argparse.NewParser("ctladm", "Replacement for ctladm for Linux Playkey SDS")
 
 	parserDevlist := parser.NewCommand("devlist", "List devices")
 	argDevListXml := parserDevlist.Flag("x", "xml", &argparse.Options{Help: "Enable XML Output"})
